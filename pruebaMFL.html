@@ -74,27 +74,33 @@
     <div id="container"></div>
     
     <div id="info">
-        <h3>Carrito Sensor MFL</h3>
-        <p>Material: Madera</p>
-        <p>Ruedas: 2</p>
+        <h3>Sensor MFL Unisangil 2025</h3>
+        <p>Material: Aluminio </p>
+        <p>Modelo Digital</p>
+        <p>Sobre tubería</p>
     </div>
     
     <div id="controls">
         <button onclick="toggleRotation()">Rotación Auto</button>
+        <button onclick="toggleAnimation()">Simulación</button>
+        <button onclick="toggleTransparencia()">Transparencia</button>
         <button onclick="resetView()">Reset</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        let scene, camera, renderer, carrito;
+        let scene, camera, renderer, carrito, tubo, escena;
         let autoRotate = false;
+        let animateCarrito = false;
+        let carritoPosition = -1.1; // Posición inicial en X
+        let tuboTransparente = true; // Estado de transparencia del tubo
         
         function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0);
             
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0.25, 0.15, 0.25);
+            camera.position.set(0.4, 0.25, 0.4);
             camera.lookAt(0, 0, 0);
             
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -104,6 +110,12 @@
             document.getElementById('container').appendChild(renderer.domElement);
             
             setupLights();
+            
+            // Grupo que contiene el tubo y el carrito
+            escena = new THREE.Group();
+            scene.add(escena);
+            
+            createTubo();
             createCarrito();
             setupControls();
             animate();
@@ -123,6 +135,93 @@
             scene.add(directionalLight);
         }
         
+        function createTubo() {
+            tubo = new THREE.Group();
+            
+            // Tubería principal (cilindro exterior)
+            const tuboExteriorGeometry = new THREE.CylinderGeometry(0.05, 0.05, 2.4, 32);
+            const tuboMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xcccccc,
+                metalness: 0.3,
+                roughness: 0.3,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.5
+            });
+            
+            const tuboExterior = new THREE.Mesh(tuboExteriorGeometry, tuboMaterial);
+            tuboExterior.rotation.z = Math.PI / 2;
+            tuboExterior.castShadow = true;
+            tuboExterior.receiveShadow = true;
+            tuboExterior.name = 'tuboExterior'; // Nombre para identificarlo
+            tubo.add(tuboExterior);
+            
+            // Tubería interior (para hacer el efecto hueco)
+            const tuboInteriorGeometry = new THREE.CylinderGeometry(0.035, 0.035, 2.4, 32);
+            const tuboInteriorMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0x000000,
+                metalness: 0.6,
+                roughness: 0.4,
+                side: THREE.BackSide
+            });
+            
+            const tuboInterior = new THREE.Mesh(tuboInteriorGeometry, tuboInteriorMaterial);
+            tuboInterior.rotation.z = Math.PI / 2;
+            tubo.add(tuboInterior);
+            
+            // DEFECTOS ROJOS en las paredes del tubo (aleatorios)
+            const defectoMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xff0000,
+                metalness: 0.2,
+                roughness: 0.6,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.3
+            });
+            
+            const numDefectos = 12; // Cantidad de defectos
+            const radioInterior = 0.034; // Radio donde se pegan los defectos (pared interior)
+            const longitudTubo = 2.4;
+            
+            for (let i = 0; i < numDefectos; i++) {
+                const tamano = 0.004 + Math.random() * 0.006; // Tamaño aleatorio entre 0.004 y 0.01
+                const defectoGeometry = new THREE.BoxGeometry(tamano, tamano, tamano);
+                const defecto = new THREE.Mesh(defectoGeometry, defectoMaterial);
+                
+                // Posición aleatoria a lo largo del tubo
+                const posX = (Math.random() - 0.5) * longitudTubo * 0.9;
+                
+                // Ángulo aleatorio alrededor del tubo
+                const angulo = Math.random() * Math.PI * 2;
+                
+                // Posicionar en la pared interior del tubo
+                defecto.position.x = posX;
+                defecto.position.y = Math.cos(angulo) * radioInterior;
+                defecto.position.z = Math.sin(angulo) * radioInterior;
+                
+                // Rotar para que quede pegado a la pared
+                defecto.rotation.x = Math.random() * Math.PI;
+                defecto.rotation.y = Math.random() * Math.PI;
+                defecto.rotation.z = angulo;
+                
+                tubo.add(defecto);
+            }
+            
+            // Luz interior del tubo para iluminarlo mejor
+            const luzInterior1 = new THREE.PointLight(0xffffff, 1.0, 2);
+            luzInterior1.position.set(-0.8, 0, 0);
+            tubo.add(luzInterior1);
+            
+            const luzInterior2 = new THREE.PointLight(0xffffff, 1.0, 2);
+            luzInterior2.position.set(0.8, 0, 0);
+            tubo.add(luzInterior2);
+            
+            const luzInterior3 = new THREE.PointLight(0xffffff, 0.8, 1.5);
+            luzInterior3.position.set(0, 0, 0);
+            tubo.add(luzInterior3);
+            
+            escena.add(tubo);
+        }
+        
         function createCarrito() {
             carrito = new THREE.Group();
             
@@ -135,51 +234,114 @@
             // Cuerpo principal
             const bodyGeometry = new THREE.BoxGeometry(0.13, 0.03, 0.07);
             const body = new THREE.Mesh(bodyGeometry, grayMaterial);
-            body.position.y = 0.025;
+            body.position.y = -0.035;
             body.castShadow = true;
             body.receiveShadow = true;
             carrito.add(body);
 
-
             // Rueda delantera
-            const wheelGeometry = new THREE.CylinderGeometry(0.023, 0.023, 0.060, 22);
+            const wheelGeometry = new THREE.CylinderGeometry(0.023, 0.023, 0.07, 22);
             const wheel1 = new THREE.Mesh(wheelGeometry, grayMaterial);
-            wheel1.rotation.x = Math.PI / 2;  // Rotación vertical
-            wheel1.position.set(-0.10, 0.035, 0);
+            wheel1.rotation.x = Math.PI / 2;
+            wheel1.position.set(-0.10, -0.02, 0);
             wheel1.castShadow = true;
             wheel1.name = 'Rueda-delantera';
             carrito.add(wheel1);
             
             // Rueda trasera
             const wheel3 = new THREE.Mesh(wheelGeometry, grayMaterial);
-            wheel3.rotation.x = Math.PI / 2;  // Rotación vertical
-            wheel3.position.set(0.10, 0.035, 0);
+            wheel3.rotation.x = Math.PI / 2;
+            wheel3.position.set(0.10, -0.02, 0);
             wheel3.castShadow = true;
             wheel3.name = 'Rueda-trasera';
             carrito.add(wheel3);
             
-            // TAPAS LATERALES - Rectangulos a los lados del cuerpo
-            // Tapa lateral izquierda
-            const sideCapGeometry = new THREE.BoxGeometry(0.25, 0.07, 0.008);
+            // TAPAS LATERALES CON PUNTAS REDONDEADAS
             const sideCapMaterial = new THREE.MeshPhysicalMaterial({
                 color: 0x606060,
                 metalness: 0.15,
                 roughness: 0.6
             });
             
+            const sideCapShape = new THREE.Shape();
+            const width = 0.008;
+            const height = 0.07;
+            const length = 0.25;
+            const radius = 0.015;
+            
+            sideCapShape.moveTo(-length/2 + radius, -height/2);
+            sideCapShape.lineTo(length/2 - radius, -height/2);
+            sideCapShape.quadraticCurveTo(length/2, -height/2, length/2, -height/2 + radius);
+            sideCapShape.lineTo(length/2, height/2 - radius);
+            sideCapShape.quadraticCurveTo(length/2, height/2, length/2 - radius, height/2);
+            sideCapShape.lineTo(-length/2 + radius, height/2);
+            sideCapShape.quadraticCurveTo(-length/2, height/2, -length/2, height/2 - radius);
+            sideCapShape.lineTo(-length/2, -height/2 + radius);
+            sideCapShape.quadraticCurveTo(-length/2, -height/2, -length/2 + radius, -height/2);
+            
+            const extrudeSettings = {
+                depth: width,
+                bevelEnabled: false
+            };
+            
+            const sideCapGeometry = new THREE.ExtrudeGeometry(sideCapShape, extrudeSettings);
+            
             const sideCapLeft = new THREE.Mesh(sideCapGeometry, sideCapMaterial);
-            sideCapLeft.position.set(0, 0.025, 0.039);
+            sideCapLeft.position.set(0, -0.035, 0.035);
             sideCapLeft.castShadow = true;
             sideCapLeft.receiveShadow = true;
             carrito.add(sideCapLeft);
             
-            // Tapa lateral derecha
             const sideCapRight = new THREE.Mesh(sideCapGeometry, sideCapMaterial);
-            sideCapRight.position.set(0, 0.025, -0.039);
+            sideCapRight.position.set(0, -0.035, -0.043);
             sideCapRight.castShadow = true;
             sideCapRight.receiveShadow = true;
             carrito.add(sideCapRight);
             
+            // CILINDROS SUPERIORES
+            const topCylinderGeometry = new THREE.CylinderGeometry(0.003, 0.003, 0.095, 16);
+            const topCylinderMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0x505050,
+                metalness: 0.3,
+                roughness: 0.5
+            });
+            
+            const topCylinderLeft = new THREE.Mesh(topCylinderGeometry, topCylinderMaterial);
+            topCylinderLeft.position.set(-0.075, -0.045, 0);
+            topCylinderLeft.rotation.x = Math.PI / 2;
+            topCylinderLeft.castShadow = true;
+            carrito.add(topCylinderLeft);
+            
+            const topCylinderRight = new THREE.Mesh(topCylinderGeometry, topCylinderMaterial);
+            topCylinderRight.position.set(0.075, -0.045, 0);
+            topCylinderRight.rotation.x = Math.PI / 2;
+            topCylinderRight.castShadow = true;
+            carrito.add(topCylinderRight);
+
+            const topCylinderRueda1 = new THREE.Mesh(topCylinderGeometry, topCylinderMaterial);
+            topCylinderRueda1.position.set(0.1, -0.02, 0);
+            topCylinderRueda1.rotation.x = Math.PI / 2;
+            topCylinderRueda1.castShadow = true;
+            carrito.add(topCylinderRueda1);
+
+            const topCylinderRueda2 = new THREE.Mesh(topCylinderGeometry, topCylinderMaterial);
+            topCylinderRueda2.position.set(-0.1, -0.02, 0);
+            topCylinderRueda2.rotation.x = Math.PI / 2;
+            topCylinderRueda2.castShadow = true;
+            carrito.add(topCylinderRueda2);
+            
+            const topCylinderInfer1 = new THREE.Mesh(topCylinderGeometry, topCylinderMaterial);
+            topCylinderInfer1.position.set(0.04, -0.025, 0);
+            topCylinderInfer1.rotation.x = Math.PI / 2;
+            topCylinderInfer1.castShadow = true;
+            carrito.add(topCylinderInfer1);
+
+            const topCylinderInfer2 = new THREE.Mesh(topCylinderGeometry, topCylinderMaterial);
+            topCylinderInfer2.position.set(-0.04, -0.025, 0);
+            topCylinderInfer2.rotation.x = Math.PI / 2;
+            topCylinderInfer2.castShadow = true;
+            carrito.add(topCylinderInfer2);
+
             // Sensor MFL
             const sensorGeometry = new THREE.BoxGeometry(0.06, 0.012, 0.05);
             const sensorMaterial = new THREE.MeshPhysicalMaterial({
@@ -188,11 +350,29 @@
                 roughness: 0.5
             });
             const sensor = new THREE.Mesh(sensorGeometry, sensorMaterial);
-            sensor.position.y = 0.035;
+            sensor.position.y = -0.025; // Movido hacia arriba para estar sobre el tubo
             sensor.castShadow = true;
             carrito.add(sensor);
             
-            scene.add(carrito);
+            // Posicionar el carrito sobre el tubo
+            carrito.position.y = 0.05; // Altura sobre el tubo
+            carrito.rotation.x = Math.PI; // Mantener invertido
+            
+            escena.add(carrito);
+            
+            // SUPERFICIE / PLANO
+            const surfaceGeometry = new THREE.PlaneGeometry(4, 4);
+            const surfaceMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xb8d4e8,
+                metalness: 0.1,
+                roughness: 0.8,
+                side: THREE.DoubleSide
+            });
+            const surface = new THREE.Mesh(surfaceGeometry, surfaceMaterial);
+            surface.rotation.x = -Math.PI / 2;
+            surface.position.y = -0.15;
+            surface.receiveShadow = true;
+            scene.add(surface);
         }
         
         function setupControls() {
@@ -205,12 +385,11 @@
             });
             
             renderer.domElement.addEventListener('mousemove', (e) => {
-                if (isDragging && !autoRotate) {
+                if (isDragging) {
                     const deltaX = e.clientX - previousMousePosition.x;
-                    const deltaY = e.clientY - previousMousePosition.y;
                     
-                    carrito.rotation.y += deltaX * 0.01;
-                    carrito.rotation.x += deltaY * 0.01;
+                    // Solo permite rotación horizontal (derecha e izquierda)
+                    escena.rotation.y += deltaX * 0.01;
                     
                     previousMousePosition = { x: e.clientX, y: e.clientY };
                 }
@@ -220,10 +399,11 @@
                 isDragging = false;
             });
             
+            // Permite zoom con scroll
             renderer.domElement.addEventListener('wheel', (e) => {
                 const zoomSpeed = 0.05;
                 camera.position.multiplyScalar(1 + (e.deltaY > 0 ? zoomSpeed : -zoomSpeed));
-                camera.position.clampLength(0.12, 1);
+                camera.position.clampLength(0.2, 1.5);
             });
         }
         
@@ -231,10 +411,39 @@
             autoRotate = !autoRotate;
         }
         
+        function toggleRotation() {
+            autoRotate = !autoRotate;
+        }
+        
+        function toggleAnimation() {
+            animateCarrito = !animateCarrito;
+            if (animateCarrito) {
+                carritoPosition = -1.1; // Reiniciar posición
+            }
+        }
+        
+        function toggleTransparencia() {
+            tuboTransparente = !tuboTransparente;
+            const tuboExterior = tubo.getObjectByName('tuboExterior');
+            if (tuboExterior) {
+                if (tuboTransparente) {
+                    tuboExterior.material.transparent = true;
+                    tuboExterior.material.opacity = 0.5;
+                } else {
+                    tuboExterior.material.transparent = true;
+                    tuboExterior.material.opacity = 0.95;
+                }
+                tuboExterior.material.needsUpdate = true;
+            }
+        }
+        
         function resetView() {
-            camera.position.set(0.25, 0.15, 0.25);
-            carrito.rotation.set(0, 0, 0);
+            camera.position.set(0.4, 0.25, 0.4);
+            escena.rotation.set(0, 0, 0);
             autoRotate = false;
+            animateCarrito = false;
+            carritoPosition = -1.1;
+            carrito.position.x = 0;
         }
         
         function onWindowResize() {
@@ -247,7 +456,17 @@
             requestAnimationFrame(animate);
             
             if (autoRotate) {
-                carrito.rotation.y += 0.01;
+                escena.rotation.y += 0.01;
+            }
+            
+            if (animateCarrito) {
+                carritoPosition += 0.003; // Velocidad del movimiento
+                carrito.position.x = carritoPosition;
+                
+                // Reiniciar cuando llega al final
+                if (carritoPosition > 1.1) {
+                    carritoPosition = -1.1;
+                }
             }
             
             renderer.render(scene, camera);

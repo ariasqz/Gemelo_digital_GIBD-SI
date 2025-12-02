@@ -1,85 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="./styles.css">
     <title>Gemelo Digital 3D</title>
-    <style>
-        body{margin:0;padding:0;background:white;font-family:Arial, sans-serif;overflow:hidden;}
-        #container{position:relative;width:100vw;height:100vh;}
-        #info-panel{ position:absolute; top:20px; left:20px; width:260px; background:rgba(0,0,0,0.75); color:#fff; padding:14px; border-radius:10px; backdrop-filter:blur(10px); border:2px solid rgba(0,0,0,0.25); z-index:100; transition:transform .25s ease,opacity .25s ease; }
-        #controls{ position:absolute; top:20px; right:20px; width:220px; max-height:calc(100vh - 40px); overflow-y:auto; background:rgba(0,0,0,0.7); color:#fff; padding:12px; border-radius:10px; backdrop-filter:blur(8px); border:2px solid rgba(0,0,0,0.25); z-index:100; transition:transform .25s ease,opacity .25s ease; }
-
-        .control-group{ display:flex; flex-direction:column; gap:8px; margin:12px 0; }
-        .control-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-        .control-row button{ flex:1 1 auto; min-width:100px; }
-        .control-group label{ display:block; margin-bottom:6px; color:#60a5fa; font-size:12px; text-transform:uppercase; }
-        .control-group input[type="range"]{ width:100%; }
-        .control-group input[type="number"]{ width:90px; padding:6px; border-radius:4px; background:rgba(0,0,0,0.45); color:white; border:1px solid #374151; }
-        button{ background:#3b82f6; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:12px; transition:all .18s ease; }
-        button:hover{ transform:translateY(-2px); filter:brightness(1.05); }
-        .measurement-btn{ background:#10b981 !important; font-weight:bold; }
-        .measuring{ background:#ef4444 !important; }
-
-        .temperature-indicator{ position:absolute; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.9); color:white; padding:12px 24px; border-radius:22px; border:3px solid #fbbf24; font-size:20px; font-weight:bold; z-index:90; }
-        #toggle-panels{ position:absolute; top:20px; right:260px; z-index:110; background:rgba(0,0,0,0.6); color:white; padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.08); cursor:pointer; }
-        .panels-hidden #controls, .panels-hidden #info-panel{ transform:translateY(-10px) scale(.98); opacity:0; pointer-events:none; }
-
-        .three-canvas{ display:block; position:absolute; inset:0; width:100vw !important; height:100vh !important; z-index:1; }
-
-        /* Chart container */
-        #chart-container{ position:fixed; bottom:20px; right:20px; width:520px; height:320px; z-index:100; display:none; background:rgba(0,0,0,0.85); padding:12px; border-radius:10px; box-sizing:border-box; }
-        #chart-container canvas { width:100% !important; height:100% !important; display:block; }
-        #chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-        .chart-toggle-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); color:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:13px; }
-
-        /* Floating open-chart button (shows when chart is hidden) */
-        #chart-open-btn {
-            position: fixed;
-            bottom: 28px;
-            right: 28px;
-            z-index: 105;
-            background: rgba(59,130,246,0.95);
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 999px;
-            font-size: 16px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-            cursor: pointer;
-            display: none;
-        }
-        #chart-open-btn:hover{ transform: translateY(-3px); }
-
-        /* Kalman table modal */
-        #kalman-table-container{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:90%; max-width:1200px; height:80%; background:rgba(0,0,0,0.95); border-radius:15px; padding:20px; backdrop-filter:blur(15px); border:2px solid rgba(255,255,255,0.1); z-index:1000; display:none; overflow:hidden; }
-        #kalman-table{ width:100%; border-collapse:collapse; color:white; font-size:13px; table-layout:fixed; }
-        #kalman-table th, #kalman-table td{ padding:8px; border:1px solid rgba(255,255,255,0.08); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        #kalman-table th{ position:sticky; top:0; background:rgba(59,130,246,0.12); color:#60a5fa; z-index:2; }
-        #kalman-table-body{ display:block; max-height: calc(80vh - 180px); overflow-y:auto; }
-        #kalman-table thead, #kalman-table tr { display:table; width:100%; table-layout:fixed; }
-        #kalman-table tbody tr { display:table; width:100%; table-layout:fixed; }
-
-        .data-item { margin: 8px 0; font-size: 14px; }
-        .data-label { color: #60a5fa; font-weight: bold; }
-        .data-value { color: #fbbf24; font-family: 'Courier New', monospace; }
-        .close-table { position:absolute; top:15px; right:20px; background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; z-index:1100; }
-    </style>
 </head>
+
 <body>
     <div id="container">
         <button id="toggle-panels" title="Mostrar / Ocultar paneles">👁️ Ver modelo</button>
 
         <div id="info-panel">
-            <h3 style="margin-top:0;color:#60a5fa">🌡️ Gemelo Digital RTD-PT100</h3>
-            <div class="data-item"><span class="data-label">Estado:</span> <span class="data-value" id="status">Online</span></div>
-            <div class="data-item"><span class="data-label">Temperatura Actual:</span> <span class="data-value" id="current-temp">25.0°C</span></div>
-            <div class="data-item"><span class="data-label">Temperatura Ambiente:</span> <span class="data-value" id="ambient-temp">25.0°C</span></div>
-            <div class="data-item"><span class="data-label">Error:</span> <span class="data-value" id="error">±0.0°C</span></div>
-            <div class="data-item"><span class="data-label">Deriva:</span> <span class="data-value" id="drift">0.000°C</span></div>
-            <div class="data-item"><span class="data-label">Tiempo de Respuesta:</span> <span class="data-value" id="response-time">5.0s</span></div>
-            <div class="data-item"><span class="data-label">Tiempo Activo:</span> <span class="data-value" id="uptime">00:00:00</span></div>
-            <div class="data-item"><span class="data-label">Mediciones:</span> <span class="data-value" id="measurement-count">0</span></div>
+            <h3 style="margin-top:0;color:#60a5fa">🌡️ Gemelo Digital RTD-PT100 UNISANGIL</h3>
+            <div class="data-item"><span class="data-label">Estado:</span> <span class="data-value"
+                    id="status">Online</span></div>
+            <div class="data-item"><span class="data-label">Temperatura Actual:</span> <span class="data-value"
+                    id="current-temp">25.0°C</span></div>
+            <div class="data-item"><span class="data-label">Temperatura Ambiente:</span> <span class="data-value"
+                    id="ambient-temp">25.0°C</span></div>
+            <div class="data-item"><span class="data-label">Error:</span> <span class="data-value"
+                    id="error">±0.0°C</span></div>
+            <div class="data-item"><span class="data-label">Deriva:</span> <span class="data-value"
+                    id="drift">0.000°C</span></div>
+            <div class="data-item"><span class="data-label">Tiempo de Respuesta:</span> <span class="data-value"
+                    id="response-time">5.0s</span></div>
+            <div class="data-item"><span class="data-label">Tiempo Activo:</span> <span class="data-value"
+                    id="uptime">00:00:00</span></div>
+            <div class="data-item"><span class="data-label">Mediciones:</span> <span class="data-value"
+                    id="measurement-count">0</span></div>
         </div>
 
         <div id="controls">
@@ -119,15 +69,19 @@
 
             <div class="control-group">
                 <div class="control-row">
-                    <button onclick="startMeasurement()" id="measurement-button" class="measurement-btn">📊 Iniciar Medición</button>
-                    <button onclick="stopMeasurement()" id="stop-measurement-button" class="measurement-btn measuring" style="display:none">⏹️ Detener</button>
+                    <button onclick="startMeasurement()" id="measurement-button" class="measurement-btn">📊 Iniciar
+                        Medición</button>
+                    <button onclick="stopMeasurement()" id="stop-measurement-button" class="measurement-btn measuring"
+                        style="display:none">⏹️ Detener</button>
                 </div>
             </div>
 
             <div class="control-group">
                 <div class="control-row">
-                    <button onclick="startKalmanFilter()" id="kalman-button" class="measurement-btn">🔬 Filtro Kalman</button>
-                    <button onclick="stopKalmanFilter()" id="stop-kalman-button" class="measurement-btn measuring" style="display:none">⏹️ Detener Kalman</button>
+                    <button onclick="startKalmanFilter()" id="kalman-button" class="measurement-btn">🔬 Filtro
+                        Kalman</button>
+                    <button onclick="stopKalmanFilter()" id="stop-kalman-button" class="measurement-btn measuring"
+                        style="display:none">⏹️ Detener Kalman</button>
                 </div>
             </div>
 
@@ -148,19 +102,22 @@
 
         <div class="temperature-indicator"><span id="temp-display">25.0°C</span></div>
 
-        <div id="measurement-status" style="display:none; position:absolute; bottom:100px; left:50%; transform:translateX(-50%); background:rgba(16,185,129,0.9); color:#fff; padding:10px 20px; border-radius:20px; z-index:100;">📊 Midiendo cada 5 segundos...</div>
-        <div id="kalman-status" style="display:none; position:absolute; bottom:100px; left:50%; transform:translateX(-50%); background:rgba(139,69,19,0.9); color:#fff; padding:10px 20px; border-radius:20px; z-index:100;">🔬 Filtro Kalman activo...</div>
+        <div id="measurement-status"
+            style="display:none; position:absolute; bottom:100px; left:50%; transform:translateX(-50%); background:rgba(16,185,129,0.9); color:#fff; padding:10px 20px; border-radius:20px; z-index:100;">
+            📊 Midiendo cada 5 segundos...</div>
+        <div id="kalman-status"
+            style="display:none; position:absolute; bottom:100px; left:50%; transform:translateX(-50%); background:rgba(139,69,19,0.9); color:#fff; padding:10px 20px; border-radius:20px; z-index:100;">
+            🔬 Filtro Kalman activo...</div>
 
-        <!-- chart container with toggle button -->
         <div id="chart-container" role="region" aria-label="Gráfica de temperatura">
             <div id="chart-header">
                 <h4 id="chart-title" style="color:#60a5fa;margin:0;">📊 Comparación Temperatura Real vs Medida</h4>
-                <button class="chart-toggle-btn" id="chart-toggle-btn" onclick="toggleChartVisibility()">📈 Ocultar</button>
+                <button class="chart-toggle-btn" id="chart-toggle-btn" onclick="toggleChartVisibility()">📈
+                    Ocultar</button>
             </div>
             <canvas id="temperatureChart"></canvas>
         </div>
 
-        <!-- floating open button (appears when chart hidden) -->
         <button id="chart-open-btn" title="Abrir gráfica" onclick="toggleChartVisibility(true)">📊</button>
     </div>
 
@@ -184,447 +141,10 @@
         </table>
     </div>
 
-    <!-- libs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-
-    <script>
-    // ---------------------------------------
-    // Variables globales
-    // ---------------------------------------
-    let scene, camera, renderer, sensor, controls;
-    let sensorTemperature = 25.0;
-    let ambientTemperature = 25.0;
-    let responseTime = 5.0;
-    let noiseLevel = 0.05;
-    let driftOffset = 0.0;
-    let calibrationOffset = 0.0;
-    let startTime = Date.now();
-    let isSimulating = true;
-
-    let sensorBody, probe, wires = [], circuitBoard, housing, heatIndicator;
-    let temperatureHistory = [];
-
-    let isMeasuring = false;
-    let measurementInterval = null;
-    let measurementData = [];
-    let temperatureChart = null;
-    let measurementStartTime = Date.now();
-
-    let kalmanFilter = { x:10.0, P:10000.0001, q:0.0001, r:0.01, K:0, isInitialized:false };
-    let kalmanData = [];
-    let trueValues = [];
-    let measurements = [];
-    let estimates = [];
-
-    // ---------------------------------------
-    // Inicialización
-    // ---------------------------------------
-    function init() {
-        try {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xf0f0f0);
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-            camera.position.set(5,3,5);
-
-            renderer = new THREE.WebGLRenderer({ antialias:true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-
-            // Marcar el canvas del renderer con la clase específica
-            renderer.domElement.classList.add('three-canvas');
-
-            const container = document.getElementById('container');
-            if (!container) throw new Error("No se encontró el contenedor #container");
-            container.appendChild(renderer.domElement);
-
-            // luces y modelo
-            setupLights();
-            try { createSensorModel(); } catch (errModel) { console.error("Error creando el modelo 3D:", errModel); alert("Error creando modelo 3D. Mira la consola."); }
-
-            // controles UI y chart
-            setupControls();
-            initializeChart();
-
-            // animación y actualización
-            animate();
-            setInterval(updateSensor, 100);
-
-            console.log("Inicialización completa (cables mejorados + rotación x4).");
-        } catch (err) {
-            console.error("Error en init():", err);
-            alert("Error grave al iniciar la escena. Mira la consola (F12).");
-        }
-    }
-
-    // ---------------------------------------
-    // Luces
-    // ---------------------------------------
-    function setupLights(){
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-        scene.add(ambientLight);
-
-        const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-        dir.position.set(10,10,5);
-        dir.castShadow = true;
-        scene.add(dir);
-
-        const p = new THREE.PointLight(0x60a5fa, 0.8, 10);
-        p.position.set(0,3,2);
-        scene.add(p);
-
-        const fill = new THREE.DirectionalLight(0xffffff, 0.4);
-        fill.position.set(-5,5,-5);
-        scene.add(fill);
-    }
-
-    // ---------------------------------------
-    // Modelo: cuerpo más delgado, cables mejorados (TubeGeometry)
-    // ---------------------------------------
-    function createSensorModel(){
-        sensor = new THREE.Group();
-
-        // cuerpo delgado
-        const bodyG = new THREE.CylinderGeometry(0.18, 0.18, 2, 16);
-        const bodyM = new THREE.MeshPhysicalMaterial({ color:0xd3d3d3, metalness:0.8, roughness:0.2, clearcoat:0.1 });
-        sensorBody = new THREE.Mesh(bodyG, bodyM);
-        sensorBody.position.y = 0;
-        sensorBody.castShadow = true;
-        sensorBody.receiveShadow = true;
-        sensor.add(sensorBody);
-
-        // sonda
-        const probeG = new THREE.CylinderGeometry(0.1,0.05,1,8);
-        const probeM = new THREE.MeshPhysicalMaterial({ color:0xffd700, metalness:0.9, roughness:0.1, emissive:0x221100, emissiveIntensity:0.1 });
-        probe = new THREE.Mesh(probeG, probeM);
-        probe.position.y = -1.5;
-        probe.castShadow = true;
-        sensor.add(probe);
-
-        // housing (superior intacta)
-        const housingG = new THREE.CylinderGeometry(0.4,0.3,0.5,16);
-        const housingM = new THREE.MeshPhysicalMaterial({ color:0x2c3e50, roughness:0.4, metalness:0.3 });
-        housing = new THREE.Mesh(housingG, housingM);
-        housing.position.y = 1.25;
-        housing.castShadow = true;
-        sensor.add(housing);
-
-        // placa superior
-        const boardG = new THREE.BoxGeometry(0.6,0.1,0.4);
-        const boardM = new THREE.MeshLambertMaterial({ color:0x2d5a27 });
-        circuitBoard = new THREE.Mesh(boardG, boardM);
-        circuitBoard.position.y = 1.55;
-        circuitBoard.castShadow = true;
-        sensor.add(circuitBoard);
-
-        // componentes
-        for (let i = 0; i < 6; i++) {
-            const cG = new THREE.BoxGeometry(0.05, 0.03, 0.05);
-            const cM = new THREE.MeshLambertMaterial({ color: Math.random() > 0.5 ? 0x1a1a1a : 0x8b4513 });
-            const comp = new THREE.Mesh(cG, cM);
-            comp.position.set((Math.random() - 0.5) * 0.4, 1.6, (Math.random() - 0.5) * 0.3);
-            sensor.add(comp);
-        }
-
-        // --- cables mejorados: curvas que salen desde la placa ---
-        // definimos 3 puntos de inicio sobre la placa (ligera variación en X/Z)
-        const startY = circuitBoard.position.y + 0.05; // justo encima de la placa
-        const starts = [
-            new THREE.Vector3( 0.12, startY,  0.08),
-            new THREE.Vector3( 0.00, startY, -0.12),
-            new THREE.Vector3(-0.12, startY,  0.08)
-        ];
-
-        const colors = [0xff0000, 0x0000ff, 0x00cc44];
-        // crear curvas y TubeGeometry para cada cable
-        for (let i = 0; i < 3; i++) {
-            const s = starts[i];
-            // punto intermedio que crea la curvatura: hacia arriba y afuera
-            const mid = new THREE.Vector3(s.x * 1.2, s.y + 0.6, s.z * 2.0 + (i===1? -0.15: 0.15));
-            // punto final (con ligera caída) fuera del modelo
-            const end = new THREE.Vector3(s.x * 1.6, s.y + 0.9, s.z * 2.7 + (i===1? -0.35: 0.35));
-            const pts = [ s, mid, end ];
-            const curve = new THREE.CatmullRomCurve3(pts);
-            const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.02, 8, false);
-            const mat = new THREE.MeshStandardMaterial({ color: colors[i], metalness:0.3, roughness:0.6, emissive:0x000000 });
-            const cable = new THREE.Mesh(tubeGeo, mat);
-            cable.castShadow = true;
-            cable.receiveShadow = true;
-            // añadir al grupo sensor para que parezcan salir del mismo
-            sensor.add(cable);
-            wires.push(cable);
-
-            // pequeña malla esférica en el punto de conexión para soldadura visual
-            const capGeom = new THREE.SphereGeometry(0.025, 12, 12);
-            const capMat = new THREE.MeshStandardMaterial({ color:0x222222, metalness:0.6, roughness:0.4 });
-            const cap = new THREE.Mesh(capGeom, capMat);
-            cap.position.copy(s);
-            sensor.add(cap);
-        }
-
-        // indicador calor
-        const heatG = new THREE.SphereGeometry(0.05, 16, 16);
-        const heatM = new THREE.MeshBasicMaterial({ color:0x00ff00, transparent:true, opacity:0.8 });
-        heatIndicator = new THREE.Mesh(heatG, heatM);
-        heatIndicator.position.set(0.4, 0, 0);
-        sensor.add(heatIndicator);
-
-        // base
-        const baseG = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 16);
-        const baseM = new THREE.MeshLambertMaterial({ color:0x34495e });
-        const base = new THREE.Mesh(baseG, baseM);
-        base.position.y = -2.5;
-        sensor.add(base);
-
-        scene.add(sensor);
-
-        // suelo
-        const floorG = new THREE.PlaneGeometry(20, 20);
-        const floorM = new THREE.MeshLambertMaterial({ color: 0xcccccc, transparent: true, opacity: 0.7 });
-        const floor = new THREE.Mesh(floorG, floorM);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -3;
-        scene.add(floor);
-
-        console.log("Sensor 3D (cuerpo delgado + cables conectados) creado OK");
-    }
-
-    // ---------------------------------------
-    // Controls (UI + OrbitControls)
-    // ---------------------------------------
-    function setupControls(){
-        const tempSlider = document.getElementById('temp-slider');
-        const tempInput = document.getElementById('temp-input');
-        tempSlider.addEventListener('input', e => { ambientTemperature = parseFloat(e.target.value); tempInput.value = ambientTemperature; updateAmbientDisplay(); });
-        tempInput.addEventListener('input', e => { ambientTemperature = parseFloat(e.target.value); tempSlider.value = ambientTemperature; updateAmbientDisplay(); });
-
-        const responseSlider = document.getElementById('response-slider');
-        const responseInput = document.getElementById('response-input');
-        responseSlider.addEventListener('input', e => { responseTime = parseFloat(e.target.value); responseInput.value = responseTime; updateResponseTimeDisplay(); });
-        responseInput.addEventListener('input', e => { responseTime = parseFloat(e.target.value); responseSlider.value = responseTime; updateResponseTimeDisplay(); });
-
-        const noiseSlider = document.getElementById('noise-slider');
-        const noiseInput = document.getElementById('noise-input');
-        noiseSlider.addEventListener('input', e => { noiseLevel = parseFloat(e.target.value); noiseInput.value = noiseLevel; });
-        noiseInput.addEventListener('input', e => { noiseLevel = parseFloat(e.target.value); noiseSlider.value = noiseLevel; });
-
-        try {
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.enablePan = true;
-            controls.minDistance = 2;
-            controls.maxDistance = 20;
-        } catch(ctrlErr){
-            console.warn("OrbitControls no disponible o fallo al inicializar:", ctrlErr);
-        }
-
-        window.addEventListener('resize', () => {
-            if (!camera || !renderer) return;
-            camera.aspect = window.innerWidth/window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        const toggleBtn = document.getElementById('toggle-panels');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                document.body.classList.toggle('panels-hidden');
-                const hidden = document.body.classList.contains('panels-hidden');
-                toggleBtn.textContent = hidden ? '🔍 Mostrar UI' : '👁️ Ver modelo';
-                try { if (controls && controls.target) controls.target.set(0,0,0); } catch(e){}
-            });
-        }
-    }
-
-    // ---------------------------------------
-    // Chart
-    // ---------------------------------------
-    function initializeChart(){
-        try {
-            const ctx = document.getElementById('temperatureChart').getContext('2d');
-            temperatureChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: [], datasets: [
-                    { label: 'Temperatura Real', data: [], borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', borderWidth:2, fill:false, tension:0.3 },
-                    { label: 'Mediciones', data: [], borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.1)', borderWidth:2, fill:false, tension:0.3 },
-                    { label: 'Estimaciones Kalman', data: [], borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.1)', borderWidth:2, fill:false, tension:0.3 }
-                ]},
-                options: { responsive:true, maintainAspectRatio:false,
-                    plugins:{ legend:{ labels:{ color:'white' } } },
-                    scales:{ x:{ ticks:{ color:'#94a3b8' } }, y:{ ticks:{ color:'#94a3b8' } } }
-                }
-            });
-        } catch(chartErr){
-            console.warn("Error inicializando Chart.js:", chartErr);
-        }
-    }
-
-    // ---------------------------------------
-    // Simulación del sensor
-    // ---------------------------------------
-    function updateSensor(){
-        if (!isSimulating) return;
-        const dt = 0.1;
-        const alpha = dt / (responseTime + dt);
-        sensorTemperature += alpha * (ambientTemperature - sensorTemperature);
-        const timeHours = (Date.now() - startTime) / (1000*60*60);
-        driftOffset = 0.001 * timeHours;
-        const noise = (Math.random()-0.5)*2*noiseLevel;
-        const measuredTemp = sensorTemperature + driftOffset + noise + calibrationOffset;
-
-        updateSensorVisualization(measuredTemp);
-        updateDataDisplays(measuredTemp);
-
-        temperatureHistory.push({ time: Date.now(), measured: measuredTemp, ambient: ambientTemperature });
-        if (temperatureHistory.length>2000) temperatureHistory.shift();
-    }
-
-    function updateSensorVisualization(temperature){
-        const normalizedTemp = Math.max(-40, Math.min(150, temperature));
-        const tempRatio = (normalizedTemp + 40) / 190;
-        const hue = (1 - tempRatio) * 240;
-        if (heatIndicator && heatIndicator.material) {
-            try { heatIndicator.material.color.setHSL(hue/360,1,0.5); } catch(e){}
-            heatIndicator.material.opacity = 0.5 + 0.3 * Math.sin(Date.now()*0.005);
-        }
-        // rotación del sensor (x4 la velocidad ante1   rior)
-        if (sensor) sensor.rotation.y += 0.02;
-        if (probe && probe.material) {
-            probe.material.emissiveIntensity = (temperature>50) ? Math.min(0.5,(temperature-50)/100) : 0.1;
-        }
-    }
-
-    function updateDataDisplays(measuredTemp){
-        document.getElementById('current-temp').textContent = measuredTemp.toFixed(2)+'°C';
-        document.getElementById('temp-display').textContent = measuredTemp.toFixed(1)+'°C';
-        document.getElementById('ambient-temp').textContent = ambientTemperature.toFixed(1)+'°C';
-        document.getElementById('error').textContent = '±'+Math.abs(measuredTemp-ambientTemperature).toFixed(2)+'°C';
-        document.getElementById('drift').textContent = driftOffset.toFixed(3)+'°C';
-        document.getElementById('measurement-count').textContent = measurementData.length;
-        const uptime = Math.floor((Date.now() - startTime)/1000);
-        const hours = Math.floor(uptime/3600), minutes = Math.floor((uptime%3600)/60), seconds = uptime%60;
-        document.getElementById('uptime').textContent = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
-    }
-
-    // ---------------------------------------
-    // Mediciones, Kalman, tabla y utilidades (idéntico a v5)
-    // ---------------------------------------
-    function startMeasurement(){
-        if (isMeasuring) return;
-        isMeasuring = true;
-        measurementStartTime = Date.now();
-        measurementData = [];
-        document.getElementById('measurement-status').style.display = 'block';
-        document.getElementById('chart-container').style.display = 'block';
-        document.getElementById('chart-open-btn').style.display = 'none';
-        document.getElementById('measurement-button').style.display = 'none';
-        document.getElementById('stop-measurement-button').style.display = 'inline-block';
-        if (temperatureChart) {
-            temperatureChart.data.labels = [];
-            temperatureChart.data.datasets[0].data = [];
-            temperatureChart.data.datasets[1].data = [];
-            temperatureChart.update();
-        }
-        takeMeasurement();
-        measurementInterval = setInterval(takeMeasurement, 5000);
-    }
-
-    function stopMeasurement(){
-        if (!isMeasuring) return;
-        isMeasuring = false;
-        if (measurementInterval) { clearInterval(measurementInterval); measurementInterval = null; }
-        document.getElementById('measurement-status').style.display = 'none';
-        document.getElementById('measurement-button').style.display = 'inline-block';
-        document.getElementById('stop-measurement-button').style.display = 'none';
-        if (measurementData.length>0) showMeasurementSummary();
-    }
-
-    function takeMeasurement(){
-        const currentTime = (Date.now() - measurementStartTime)/1000;
-        const timeHours = (Date.now() - startTime)/(1000*60*60);
-        const currentDrift = 0.001 * timeHours;
-        const noise = (Math.random()-0.5)*2*noiseLevel;
-        const measuredTemp = sensorTemperature + currentDrift + noise + calibrationOffset;
-        const measurement = { time: currentTime, realTemp: ambientTemperature, measuredTemp: measuredTemp, error: Math.abs(measuredTemp-ambientTemperature), timestamp: new Date() };
-        measurementData.push(measurement);
-        if (temperatureChart) {
-            temperatureChart.data.labels.push(Number(currentTime.toFixed(0)));
-            temperatureChart.data.datasets[0].data.push(Number(measurement.realTemp.toFixed(2)));
-            temperatureChart.data.datasets[1].data.push(Number(measurement.measuredTemp.toFixed(2)));
-            temperatureChart.update('none');
-            if (temperatureChart.data.labels.length > 50) {
-                temperatureChart.data.labels.shift();
-                temperatureChart.data.datasets[0].data.shift();
-                temperatureChart.data.datasets[1].data.shift();
-            }
-        }
-    }
-
-    function initKalmanFilter(){ kalmanFilter = { x:10.0, P:10000.0001, q:0.0001, r:0.01, K:0, isInitialized:false }; kalmanData = []; trueValues=[]; measurements=[]; estimates=[]; }
-    function kalmanIteration(measurement, trueValue, iterationNumber){
-        const result = {}; result.z = measurement; result.trueValue = trueValue; result.n = iterationNumber;
-        kalmanFilter.K = kalmanFilter.P / (kalmanFilter.P + kalmanFilter.r); result.K = kalmanFilter.K;
-        kalmanFilter.x = kalmanFilter.x + kalmanFilter.K * (measurement - kalmanFilter.x); result.x_updated = kalmanFilter.x;
-        kalmanFilter.P = (1 - kalmanFilter.K) * kalmanFilter.P; result.P_updated = kalmanFilter.P;
-        result.x_predicted = kalmanFilter.x; const predictedP = kalmanFilter.P + kalmanFilter.q; result.P_predicted = predictedP; kalmanFilter.P = predictedP;
-        kalmanData.push(result); trueValues.push(trueValue); measurements.push(measurement); estimates.push(kalmanFilter.x);
-        return result;
-    }
-
-    function startKalmanFilter(){ if (isMeasuring) return; initKalmanFilter(); isMeasuring = true; measurementStartTime = Date.now(); measurementData = []; document.getElementById('kalman-status').style.display = 'block'; document.getElementById('chart-container').style.display = 'block'; document.getElementById('chart-open-btn').style.display = 'none'; document.getElementById('kalman-button').style.display = 'none'; document.getElementById('stop-kalman-button').style.display = 'inline-block'; if (temperatureChart) { temperatureChart.data.labels=[]; temperatureChart.data.datasets[0].data=[]; temperatureChart.data.datasets[1].data=[]; temperatureChart.data.datasets[2].data=[]; temperatureChart.update(); } takeKalmanMeasurement(); measurementInterval = setInterval(takeKalmanMeasurement, 5000); }
-    function stopKalmanFilter(){ if (!isMeasuring) return; isMeasuring = false; if (measurementInterval) { clearInterval(measurementInterval); measurementInterval = null; } document.getElementById('kalman-status').style.display = 'none'; document.getElementById('kalman-button').style.display = 'inline-block'; document.getElementById('stop-kalman-button').style.display = 'none'; }
-    function takeKalmanMeasurement(){ const currentTime = (Date.now() - measurementStartTime)/1000; const timeHours = (Date.now() - startTime)/(1000*60*60); const currentDrift = 0.001 * timeHours; const noise = (Math.random()-0.5)*2*noiseLevel; const measuredTemp = sensorTemperature + currentDrift + noise + calibrationOffset; const trueTemp = ambientTemperature; const iterationNumber = kalmanData.length + 1; const kalmanResult = kalmanIteration(measuredTemp, trueTemp, iterationNumber); const measurement = { time: currentTime, realTemp:trueTemp, measuredTemp:measuredTemp, kalmanEstimate:kalmanResult.x_updated, error:Math.abs(measuredTemp-trueTemp), kalmanError:Math.abs(kalmanResult.x_updated-trueTemp), timestamp:new Date(), kalmanData:kalmanResult }; measurementData.push(measurement); if (temperatureChart) { temperatureChart.data.labels.push(iterationNumber); temperatureChart.data.datasets[0].data.push(Number(trueTemp.toFixed(3))); temperatureChart.data.datasets[1].data.push(Number(measuredTemp.toFixed(3))); temperatureChart.data.datasets[2].data.push(Number(kalmanResult.x_updated.toFixed(3))); temperatureChart.update('none'); if (temperatureChart.data.labels.length>50){ temperatureChart.data.labels.shift(); temperatureChart.data.datasets[0].data.shift(); temperatureChart.data.datasets[1].data.shift(); temperatureChart.data.datasets[2].data.shift(); } } }
-
-    function showKalmanTable(){ const modal = document.getElementById('kalman-table-container'); if (!modal) return; populateKalmanTable(); modal.style.display = 'block'; }
-    function closeKalmanTable(){ const modal = document.getElementById('kalman-table-container'); if (!modal) return; modal.style.display = 'none'; }
-    function populateKalmanTable(){ const body = document.getElementById('kalman-table-body'); body.innerHTML = ''; if (!kalmanData || kalmanData.length===0){ const tr = document.createElement('tr'); tr.innerHTML = `<td colspan="7" style="color:#aaa;">No hay datos de Kalman todavía.</td>`; body.appendChild(tr); return; } for (let i=0;i<kalmanData.length;i++){ const row = kalmanData[i]; const z = (measurements[i]!==undefined) ? Number(measurements[i]).toFixed(6) : (row.z!==undefined?Number(row.z).toFixed(6):'N/A'); const K = row.K!==undefined?Number(row.K).toFixed(6):'N/A'; const x_u = row.x_updated!==undefined?Number(row.x_updated).toFixed(6):'N/A'; const P_u = row.P_updated!==undefined?Number(row.P_updated).toFixed(6):'N/A'; const x_p = row.x_predicted!==undefined?Number(row.x_predicted).toFixed(6):'N/A'; const P_p = row.P_predicted!==undefined?Number(row.P_predicted).toFixed(6):'N/A'; const tr = document.createElement('tr'); tr.innerHTML = `<td>${i+1}</td><td>${z}</td><td>${K}</td><td>${x_u}</td><td>${P_u}</td><td>${x_p}</td><td>${P_p}</td>`; body.appendChild(tr); } body.scrollTop = body.scrollHeight; }
-
-    function showMeasurementSummary(){ if (measurementData.length===0) return; const errors = measurementData.map(m=>m.error); const avgError = errors.reduce((a,b)=>a+b,0)/errors.length; alert(`Total: ${measurementData.length}\nError medio: ${avgError.toFixed(3)}°C`); }
-    function exportMeasurements(){ if (measurementData.length===0){ alert('No hay mediciones'); return; } let csv = ''; if (kalmanData && kalmanData.length>0){ csv = 'Iteracion,Tiempo(s),Temp_Real,Medicion_Z,Gain_K,Estimacion_X,Incertidumbre_P,Pred_X,Pred_P,Error,KalmanError\n'; measurementData.forEach((m,i)=>{ const k = m.kalmanData || {}; csv += `${i+1},${m.time.toFixed(1)},${m.realTemp.toFixed(4)},${m.measuredTemp.toFixed(4)},${k.K?Number(k.K).toFixed(6):'N/A'},${k.x_updated?Number(k.x_updated).toFixed(6):'N/A'},${k.P_updated?Number(k.P_updated).toFixed(6):'N/A'},${k.x_predicted?Number(k.x_predicted).toFixed(6):'N/A'},${k.P_predicted?Number(k.P_predicted).toFixed(6):'N/A'},${m.error.toFixed(4)},${m.kalmanError?m.kalmanError.toFixed(4):'N/A'}\n`; }); } else { csv = 'Tiempo(s),Temp_Real,Temp_Medida,Error,Timestamp\n'; measurementData.forEach(m=>{ csv += `${m.time.toFixed(1)},${m.realTemp.toFixed(3)},${m.measuredTemp.toFixed(3)},${m.error.toFixed(3)},${m.timestamp.toISOString()}\n`; }); } const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download = `mediciones_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); alert('Datos exportados'); }
-    function clearChart(){ measurementData=[]; kalmanData=[]; measurements=[]; estimates=[]; if (temperatureChart){ temperatureChart.data.labels=[]; temperatureChart.data.datasets.forEach(ds=>ds.data=[]); temperatureChart.update(); } }
-
-    function toggleSimulation(){ isSimulating = !isSimulating; const btn = document.getElementById('sim-button'); if (isSimulating){ btn.textContent = '⏸️ Pausar'; document.getElementById('status').textContent = 'Online'; } else { btn.textContent = '▶️ Iniciar'; document.getElementById('status').textContent = 'Pausado'; } }
-    function addHeat(){ ambientTemperature = Math.min(150, ambientTemperature+10); document.getElementById('temp-slider').value = ambientTemperature; document.getElementById('temp-input').value = ambientTemperature; updateAmbientDisplay(); }
-    function addCold(){ ambientTemperature = Math.max(-40, ambientTemperature-10); document.getElementById('temp-slider').value = ambientTemperature; document.getElementById('temp-input').value = ambientTemperature; updateAmbientDisplay(); }
-    function calibrateSensor(){ calibrationOffset = ambientTemperature - sensorTemperature; alert(`Calibrado. Offset ${calibrationOffset.toFixed(3)}°C`); }
-    function resetSensor(){ if (isMeasuring){ stopMeasurement(); stopKalmanFilter(); } sensorTemperature=25; ambientTemperature=25; calibrationOffset=0; driftOffset=0; startTime=Date.now(); measurementData=[]; temperatureHistory=[]; initKalmanFilter(); document.getElementById('temp-slider').value=25; document.getElementById('temp-input').value=25; document.getElementById('response-slider').value=5; document.getElementById('response-input').value=5; document.getElementById('noise-slider').value=0.05; document.getElementById('noise-input').value=0.05; clearChart(); document.getElementById('chart-container').style.display='none'; document.getElementById('chart-open-btn').style.display='none'; document.getElementById('measurement-status').style.display='none'; document.getElementById('kalman-status').style.display='none'; document.getElementById('measurement-button').style.display='inline-block'; document.getElementById('stop-measurement-button').style.display='none'; document.getElementById('kalman-button').style.display='inline-block'; document.getElementById('stop-kalman-button').style.display='none'; closeKalmanTable(); console.log('Sensor reiniciado'); }
-
-    // Toggle chart visibility (no afecta mediciones)
-    function toggleChartVisibility(forceShow) {
-        const container = document.getElementById('chart-container');
-        const btn = document.getElementById('chart-toggle-btn');
-        const openBtn = document.getElementById('chart-open-btn');
-        if (!container || !btn) return;
-        const isHidden = container.style.display === 'none' || getComputedStyle(container).display === 'none';
-        const show = (typeof forceShow !== 'undefined') ? forceShow : isHidden;
-        if (show) {
-            container.style.display = 'block';
-            btn.textContent = '📈 Ocultar';
-            if (openBtn) openBtn.style.display = 'none';
-        } else {
-            container.style.display = 'none';
-            btn.textContent = '📊 Mostrar';
-            if (openBtn) openBtn.style.display = 'block';
-        }
-    }
-
-    // Animación
-    function animate(){
-        requestAnimationFrame(animate);
-        try { if (controls) controls.update(); } catch(e){}
-        if (renderer && scene && camera) renderer.render(scene, camera);
-    }
-
-    // iniciar
-    window.addEventListener('load', ()=>{ setTimeout(init, 100); });
-
-    // helpers
-    function updateAmbientDisplay(){ document.getElementById('ambient-temp').textContent = ambientTemperature.toFixed(1)+'°C'; }
-    function updateResponseTimeDisplay(){ document.getElementById('response-time').textContent = responseTime.toFixed(1)+'s'; }
-
-    </script>
+    <script src="./index.js"></script>
 </body>
+
 </html>
