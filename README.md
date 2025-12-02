@@ -1,4 +1,4 @@
- HEAD
+
 # 🌡️ Gemelo Digital - Sensor de Temperatura con Filtro de Kalman
 
 Simulador interactivo en 3D de un sensor RTD-PT100 con implementación del Filtro de Kalman para estimación óptima de temperatura.
@@ -182,4 +182,4 @@ MIT License - Uso libre con atribución
 ---
 
 ⭐ Si te gusta el proyecto, dale una estrella en GitHub
- d7e062b536a66d6c56f6eb0c8f95bb5801505e0c
+
